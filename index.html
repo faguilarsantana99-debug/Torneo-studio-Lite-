@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torneo Studio Lite</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: white;
+    }
+
+    header {
+      background: #1f2937;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid #374151;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      color: #9ca3af;
+    }
+
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 25px;
+    }
+
+    .card {
+      background: #1f2937;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+
+    input {
+      background: #374151;
+      color: white;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #status {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #111827;
+      color: #9ca3af;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>🏆 Torneo Studio Lite</h1>
+    <p>Organiza tus torneos fácilmente</p>
+  </header>
+
+  <main>
+
+    <div class="card">
+      <h2>Crear torneo</h2>
+
+      <input
+        type="text"
+        id="nombreTorneo"
+        placeholder="Nombre del torneo"
+      >
+
+      <button onclick="crearTorneo()">
+        Crear torneo
+      </button>
+
+      <div id="status">
+        Esperando...
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Torneos</h2>
+
+      <div id="listaTorneos">
+        Cargando torneos...
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    Torneo Studio Lite
+  </footer>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Tu configuración -->
+  <script src="config.js"></script>
+
+  <script>
+    let supabaseClient;
+
+    try {
+      supabaseClient = window.supabase.createClient(
+        supabaseUrl,
+        supabaseKey
+      );
+
+      document.getElementById("status").textContent =
+        "✅ Supabase conectado correctamente.";
+
+      cargarTorneos();
+
+    } catch (error) {
+      document.getElementById("status").textContent =
+        "❌ Error al conectar con Supabase.";
+      console.error(error);
+    }
+
+    async function crearTorneo() {
+      const nombre = document
+        .getElementById("nombreTorneo")
+        .value
+        .trim();
+
+      if (!nombre) {
+        alert("Escribe un nombre para el torneo.");
+        return;
+      }
+
+      const { error } = await supabaseClient
+        .from("torneos")
+        .insert([
+          {
+            nombre: nombre
+          }
+        ]);
+
+      if (error) {
+        console.error(error);
+        alert("No se pudo crear el torneo. Primero necesitamos crear la tabla en Supabase.");
+        return;
+      }
+
+      document.getElementById("nombreTorneo").value = "";
+
+      cargarTorneos();
+    }
+
+    async function cargarTorneos() {
+      const lista = document.getElementById("listaTorneos");
+
+      const { data, error } = await supabaseClient
+        .from("torneos")
+        .select("*")
+        .order("id", { ascending: false });
+
+      if (error) {
+        lista.innerHTML =
+          "Todavía no hay una tabla de torneos configurada.";
+        console.error(error);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        lista.innerHTML = "No hay torneos todavía.";
+        return;
+      }
+
+      lista.innerHTML = "";
+
+      data.forEach(torneo => {
+        const elemento = document.createElement("div");
+
+        elemento.style.padding = "12px";
+        elemento.style.marginTop = "10px";
+        elemento.style.background = "#374151";
+        elemento.style.borderRadius = "8px";
+
+        elemento.textContent = "🏆 " + torneo.nombre;
+
+        lista.appendChild(elemento);
+      });
+    }
+  </script>
+
+</body>
+</html>
